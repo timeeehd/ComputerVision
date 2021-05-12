@@ -4,13 +4,11 @@ import tqdm
 
 from skimage.color import lab2rgb, rgb2lab
 
-from plotclusters3D import *
+from MeanShift.plotclusters3D import *
+from MeanShift.histogram import *
 
 from time import time
 
-
-# def distance(point1, point2):
-#     distance =
 
 def findpeak1D(data, idx, r):
     distance = cdist(data[idx].reshape(-1, 1), data, metric='euclidean')
@@ -282,18 +280,30 @@ def mean_shift_opt(data, r, threshold, c, basin=False, path=False):
     return labels, np.array(peaks)
 
 
-def imSegment(im, r, threshold=0.01, c=4, basin_of_attraction=True, path_speedup=True):
+def imSegment(im, r, threshold=0.01, c=4, basin_of_attraction=True, path_speedup=True, feature_type='3D'):
     imlab = rgb2lab(im)
-    imlab = imlab.reshape(-1, 3)
-    if basin_of_attraction or path_speedup:
-        labels, peaks = mean_shift_opt(imlab, r, threshold, c, basin_of_attraction, path_speedup)
+    if feature_type == '5D':
+        # if featureType is 5D --> add coordinates
+        xCoords = np.expand_dims(np.tile(np.array(range(image.shape[0])).reshape(-1, 1), reps=image.shape[1]),
+                                 axis=-1)
+        yCoords = np.expand_dims(np.tile(np.array(range(image.shape[1])).reshape(-1, 1), reps=image.shape[0]).T,
+                                 axis=-1)
+        imlab = np.append(imlab, xCoords, axis=-1)
+        imlab = np.append(imlab, yCoords, axis=-1)
+        flattened_image = imlab.reshape(-1, 5)
     else:
-        labels, peaks = mean_shift(imlab, r)
+        flattened_image = imlab.reshape(-1, 3)
+    if basin_of_attraction or path_speedup:
+        labels, peaks = mean_shift_opt(flattened_image, r, threshold, c, basin_of_attraction, path_speedup)
+    else:
+        labels, peaks = mean_shift(flattened_image, r)
     segemented_values = np.zeros((len(labels), 3))
+    peaks = peaks[:, 0:3]
     for idx, x in enumerate(peaks):
         points = np.argwhere(labels == idx)[:, 0]
         segemented_values[points[:]] = x
     print(f'number of unique labels {np.unique(labels)}')
+    print(f'number of peaks {len(peaks)}')
     segmented_image = segemented_values.reshape(im.shape)
     segmented_image_rgb = lab2rgb(segmented_image)
     return segmented_image_rgb, labels
@@ -307,49 +317,137 @@ if __name__ == '__main__':
     # labels, peaks = mean_shift(data.T, 2)
     # print(np.unique(np.array(labels)))
     # plotclusters3D(data.T, labels, np.array(peaks), 'Images/databaseClustered.png')
-
-    picture = "55075"
-    image = plt.imread(f"./Data/{picture}.jpg")
-
-    # r = 20
-    # start_time = time()
-    # segmented_image_3d, labels_3d = imSegment(image, r, basin_of_attraction=False, path_speedup=False)
-    # print(f"Took {time() - start_time} seconds for 3D")
-    # plt.title(f"Mean-shift 3D with r={r}")
-    # plt.imshow(segmented_image_3d)
-    # plt.savefig(f'Images/{picture} Mean-shift 3D with r={r}')
-    # plt.show()
-    r = 5
-    start_time = time()
-    segmented_image_3d, labels_3d = imSegment(image, r, basin_of_attraction=True, path_speedup=False)
-    print(f"Took {time() - start_time} seconds for 3D")
-    plt.title(f"Mean-shift 3D with r={r}")
-    plt.imshow(segmented_image_3d)
-    plt.savefig(f'Images/{picture} Mean-shift 3D with r={r} 2')
-    # plt.show()
-
-    r = 5
-    start_time = time()
-    segmented_image_3d, labels_3d = imSegment(image, r, basin_of_attraction=False, path_speedup=True)
-    print(f"Took {time() - start_time} seconds for 3D")
-    plt.title(f"Mean-shift 3D with r={r}")
-    plt.imshow(segmented_image_3d)
-    plt.savefig(f'Images/{picture} Mean-shift 3D with r={r} 3')
-    # plt.show()
+    # radiuses = [10, 5]
+    # thresholds = [0.01]
+    # circles = [4]
+    # pictures = ["181091"]
+    # print("radius changes")
+    # for r in radiuses:
+    #     for t in thresholds:
+    #         for c in circles:
+    #             for picture in pictures:
+    #                 image = plt.imread(f"./Data/{picture}.jpg")
+    #                 plt.figure(figsize=(15, 4.8))
+    #                 plt.subplot(161)
+    #                 plt.title("Original image")
+    #                 plt.imshow(image)
+    #                 plt.axis('off')
     #
-    r = 5
-    start_time = time()
-    segmented_image_3d, labels_3d = imSegment(image, r, basin_of_attraction=True, path_speedup=True)
-    print(f"Took {time() - start_time} seconds for 3D")
-    plt.title(f"Mean-shift 3D with r={r}")
-    plt.imshow(segmented_image_3d)
-    plt.savefig(f'Images/{picture} Mean-shift 3D with r={r} 4')
-    # plt.show()
-    r = 20
-    # start_time = time()
-    # segmented_image_3d, labels_3d = imSegment(image, r, False)
-    # print(f"Took {time() - start_time} seconds for 3D")
-    # plt.title(f"Mean-shift 3D with r={r}")
-    # plt.imshow(segmented_image_3d)
-    # plt.savefig(f'Images/{picture} Mean-shift 3D with r={r} 2')
-    # plt.show()
+    #                 start_time = time()
+    #                 segmented_image_3d, labels_3d = imSegment(image, r, threshold=t, c=c, basin_of_attraction=True,
+    #                                                           path_speedup=False)
+    #                 print(f"Took {time() - start_time} seconds for 3D")
+    #                 plt.subplot(162)
+    #                 plt.title(f"Speedup 1")
+    #                 plt.imshow(segmented_image_3d)
+    #                 plt.axis('off')
+    #
+    #                 start_time = time()
+    #                 segmented_image_3d, labels_3d = imSegment(image, r, threshold=t, c=c, basin_of_attraction=False,
+    #                                                           path_speedup=True)
+    #                 print(f"Took {time() - start_time} seconds for 3D")
+    #                 plt.subplot(163)
+    #                 plt.title(f"Speedup 2")
+    #                 plt.imshow(segmented_image_3d)
+    #                 plt.axis('off')
+    #
+    #                 start_time = time()
+    #                 segmented_image_3d, labels_3d = imSegment(image, r, threshold=t, c=c, basin_of_attraction=True,
+    #                                                           path_speedup=True)
+    #                 print(f"Took {time() - start_time} seconds for 3D")
+    #                 plt.subplot(164)
+    #                 plt.title(f"Speedup 1 & 2")
+    #                 plt.imshow(segmented_image_3d)
+    #                 plt.axis('off')
+    #
+    #                 # start_time = time()
+    #                 # segmented_image_5d, labels_5d = imSegment(image, r, threshold=t, c=c, basin_of_attraction=True,
+    #                 #                                           path_speedup=True,
+    #                 #                                           feature_type='5D'
+    #                 #                                           )
+    #                 # print(f"Took {time() - start_time} seconds for 5D")
+    #                 # plt.subplot(185)
+    #                 # plt.title(f"5D Image")
+    #                 # plt.imshow(segmented_image_5d)
+    #                 # plt.axis('off')
+    #
+    #                 equalized_image = histogram(picture)
+    #
+    #                 plt.subplot(165)
+    #                 plt.title("Histogram")
+    #                 plt.imshow(equalized_image)
+    #                 plt.axis('off')
+    #
+    #                 start_time = time()
+    #                 segmented_image_3d_histogram, labels_3d = imSegment(equalized_image, r, threshold=t, c=c,
+    #                                                                     basin_of_attraction=True,
+    #                                                                     path_speedup=True)
+    #                 print(f"Took {time() - start_time} seconds for 3D")
+    #                 plt.subplot(166)
+    #                 plt.title(f"Histogram S1&2")
+    #                 plt.imshow(segmented_image_3d_histogram)
+    #                 plt.axis('off')
+    #
+    #                 equalized_image = histogram(picture)
+    #
+    #                 # start_time = time()
+    #                 # segmented_image_5d_histogram, labels_5d = imSegment(equalized_image, r, threshold=t, c=c,
+    #                 #                                                     basin_of_attraction=True,
+    #                 #                                                     path_speedup=True,
+    #                 #                                                     feature_type='5D')
+    #                 # print(f"Took {time() - start_time} seconds for 5D")
+    #                 # plt.subplot(188)
+    #                 # plt.title(f"Histogram 5D ")
+    #                 # plt.imshow(segmented_image_5d_histogram)
+    #                 plt.axis('off')
+    #                 plt.suptitle(f"Mean-shift 3D with r={r}, t={t}, c={c}", fontsize=14)
+    #                 plt.savefig(f'Images/{picture} Mean-shift 3D with r={r}, t={t}, c={c}, no 5D.png')
+    #                 # plt.show()
+
+    radiuses = [20, 10, 5]
+    thresholds = [0.01]
+    circles = [4]
+    pictures = ["181091"]
+    print("radius 5D")
+    for r in radiuses:
+        for t in thresholds:
+            for c in circles:
+                for picture in pictures:
+                    image = plt.imread(f"./Data/{picture}.jpg")
+                    plt.figure(figsize=(15, 4.8))
+                    plt.subplot(141)
+                    plt.title("Original image")
+                    plt.imshow(image)
+                    plt.axis('off')
+
+                    start_time = time()
+                    segmented_image_5d, labels_5d = imSegment(image, r, threshold=t, c=c, basin_of_attraction=True,
+                                                              path_speedup=True,
+                                                              feature_type='5D'
+                                                              )
+                    print(f"Took {time() - start_time} seconds for 5D")
+                    plt.subplot(142)
+                    plt.title(f"5D Image")
+                    plt.imshow(segmented_image_5d)
+                    plt.axis('off')
+
+                    equalized_image = histogram(picture)
+
+                    plt.subplot(143)
+                    plt.title("Histogram")
+                    plt.imshow(equalized_image)
+                    plt.axis('off')
+
+                    start_time = time()
+                    segmented_image_5d_histogram, labels_5d = imSegment(equalized_image, r, threshold=t, c=c,
+                                                                        basin_of_attraction=True,
+                                                                        path_speedup=True,
+                                                                        feature_type='5D')
+                    print(f"Took {time() - start_time} seconds for 5D")
+                    plt.subplot(144)
+                    plt.title(f"Histogram 5D ")
+                    plt.imshow(segmented_image_5d_histogram)
+                    plt.axis('off')
+                    plt.suptitle(f"Mean-shift 5D with r={r}, t={t}, c={c}", fontsize=14)
+                    plt.savefig(f'Images/{picture} Mean-shift 3D with r={r}, t={t}, c={c}, 5D.png')
+                    # plt.show()
