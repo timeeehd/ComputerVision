@@ -2,6 +2,8 @@ from scipy.spatial.distance import cdist
 import scipy.io
 import tqdm
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 
 from skimage.color import lab2rgb, rgb2lab
 
@@ -39,11 +41,9 @@ def histogram(image):
 
     return img_output_rgb
 
-import numpy as np
-import matplotlib.pyplot as plt
 
 
-def plotclusters3D(data, labels, peaks, filename):
+def plotclusters3D(data, labels, peaks):
     """
     Plots the modes of the given image data in 3D by coloring each pixel
     according to its corresponding peak.
@@ -63,9 +63,10 @@ def plotclusters3D(data, labels, peaks, filename):
         color = np.random.uniform(0, 1, 3)
         #TODO: instead of random color, you can use peaks when you work on actual images
         # color = peak
-        cluster = data[np.where(labels == idx)[0]].T
+        points = np.where(labels == idx)[:]
+        cluster = data[points].T
         ax.scatter(cluster[0], cluster[1], cluster[2], c=[color], s=.5)
-    plt.savefig(filename)
+    # plt.savefig(filename)
     plt.show()
 
 def find_peak(data, idx, r, t=0.01):
@@ -354,8 +355,15 @@ def imSegment(im, r, threshold=0.01, c=4, basin_of_attraction=True, path_speedup
     # If you want to use a speed up, use the correct mean shift function
     if basin_of_attraction or path_speedup:
         labels, peaks = mean_shift_opt(flattened_image, r, threshold, c, basin_of_attraction, path_speedup)
+        # This can be run, but will still how random colors, I had some error and didn't have time to
+        # fix it
+        plotclusters3D(im.reshape(-1,3), labels, peaks[:, 0:3].T)
     else:
         labels, peaks = mean_shift(flattened_image, r)
+        # This can be run, but will still how random colors, I had some error and didn't have time to
+        # fix it
+        plotclusters3D(im.reshape(-1,3), labels, peaks[:, 0:3].T)
+
     # Get the segmented values based on the labels and peaks
     segemented_values = np.zeros((len(labels), 3))
     # If you have a 5D image, go back to 3D rgb
@@ -394,7 +402,7 @@ def segmentation(argv):
     # Which feature type you want to use
     feature_type = (argv[6])
     # If you want to use histogram equalization
-    if argv[7] == True:
+    if argv[7] == 'True':
         preprocessing = True
     else:
         preprocessing = False
@@ -405,14 +413,14 @@ def segmentation(argv):
         plt.imshow(image)
         plt.axis('off')
 
-        start_time = time()
-        segmented_image_3d, labels_3d = imSegment(image, radius, threshold=threshold, c=c, basin_of_attraction=basin,
-                                                  path_speedup=search_path, feature_type=feature_type)
-        print(f"Took {time() - start_time} seconds")
-        plt.subplot(142)
-        plt.title(f"Segmented")
-        plt.imshow(segmented_image_3d)
-        plt.axis('off')
+        # start_time = time()
+        # segmented_image_3d, labels_3d = imSegment(image, radius, threshold=threshold, c=c, basin_of_attraction=basin,
+        #                                           path_speedup=search_path, feature_type=feature_type)
+        # print(f"Took {time() - start_time} seconds")
+        # plt.subplot(142)
+        # plt.title(f"Segmented")
+        # plt.imshow(segmented_image_3d)
+        # plt.axis('off')
 
         equalized_image = histogram(picture)
         plt.subplot(143)
@@ -453,5 +461,5 @@ if __name__ == '__main__':
     if len(sys.argv) != 1:
         segmentation(sys.argv[1:])
     else:
-        parameters = ['bulbasaur', 20, 0.01, 4, "False", "False", '3D', "True"]
+        parameters = ['bulbasaur', 20, 0.01, 4, "True", "True", '3D', "True"]
         segmentation(parameters)
