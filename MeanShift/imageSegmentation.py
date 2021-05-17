@@ -29,7 +29,7 @@ def histogram(image):
     Output:
         Equalized image in RGB
     """
-    img = cv2.imread(f"./Data/{image}.jpg", cv2.IMREAD_COLOR)
+    img = cv2.imread(f"./Data/{image}", cv2.IMREAD_COLOR)
     img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
     img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
 
@@ -357,12 +357,12 @@ def imSegment(im, r, threshold=0.01, c=4, basin_of_attraction=True, path_speedup
         labels, peaks = mean_shift_opt(flattened_image, r, threshold, c, basin_of_attraction, path_speedup)
         # This can be run, but will still how random colors, I had some error and didn't have time to
         # fix it
-        plotclusters3D(im.reshape(-1,3), labels, peaks[:, 0:3].T)
+        # plotclusters3D(im.reshape(-1,3), labels, peaks[:, 0:3].T)
     else:
         labels, peaks = mean_shift(flattened_image, r)
         # This can be run, but will still how random colors, I had some error and didn't have time to
         # fix it
-        plotclusters3D(im.reshape(-1,3), labels, peaks[:, 0:3].T)
+        # plotclusters3D(im.reshape(-1,3), labels, peaks[:, 0:3].T)
 
     # Get the segmented values based on the labels and peaks
     segemented_values = np.zeros((len(labels), 3))
@@ -407,20 +407,20 @@ def segmentation(argv):
     else:
         preprocessing = False
     if preprocessing:
-        image = plt.imread(f"./Data/{picture}.jpg")
+        image = plt.imread(f"./Data/{picture}")
         plt.subplot(141)
         plt.title("Original image")
         plt.imshow(image)
         plt.axis('off')
 
-        # start_time = time()
-        # segmented_image_3d, labels_3d = imSegment(image, radius, threshold=threshold, c=c, basin_of_attraction=basin,
-        #                                           path_speedup=search_path, feature_type=feature_type)
-        # print(f"Took {time() - start_time} seconds")
-        # plt.subplot(142)
-        # plt.title(f"Segmented")
-        # plt.imshow(segmented_image_3d)
-        # plt.axis('off')
+        start_time = time()
+        segmented_image_3d, labels_3d = imSegment(image, radius, threshold=threshold, c=c, basin_of_attraction=basin,
+                                                  path_speedup=search_path, feature_type=feature_type)
+        print(f"Took {time() - start_time} seconds")
+        plt.subplot(142)
+        plt.title(f"Segmented")
+        plt.imshow(segmented_image_3d)
+        plt.axis('off')
 
         equalized_image = histogram(picture)
         plt.subplot(143)
@@ -440,7 +440,7 @@ def segmentation(argv):
 
         plt.show()
     else:
-        image = plt.imread(f"./Data/{picture}.jpg")
+        image = plt.imread(f"./Data/{picture}")
         plt.subplot(121)
         plt.title("Original image")
         plt.imshow(image)
@@ -461,5 +461,5 @@ if __name__ == '__main__':
     if len(sys.argv) != 1:
         segmentation(sys.argv[1:])
     else:
-        parameters = ['bulbasaur', 20, 0.01, 4, "True", "True", '3D', "True"]
+        parameters = ['bulbasaur.jpg', 20, 0.01, 4, "True", "True", '3D', "True"]
         segmentation(parameters)

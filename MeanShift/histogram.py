@@ -15,7 +15,7 @@ def histogram(image):
     Output:
         Equalized image in RGB
     """
-    img = cv2.imread(f"./Data/{image}.jpg", cv2.IMREAD_COLOR)
+    img = cv2.imread(f"./Data/{image}", cv2.IMREAD_COLOR)
     img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
     img_yuv[:,:,0] = cv2.equalizeHist(img_yuv[:,:,0])
 
